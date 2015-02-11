@@ -1,6 +1,6 @@
 # microservices
 
-This microservices repository contains a set of minimal web-services which are frequently used by myself for a wide range of individual applications, tools and services. They have been extracted for convinience purposes and may act as example services for my golang [GOTOJS](http://godoc.org/github.com/sebkl/gotojs)  package.
+This microservices repository contains a set of minimal web-services which are frequently used by myself for a wide range of individual applications, tools and services. They have been extracted for convinience purposes and may act as example services for the golang [GOTOJS](http://godoc.org/github.com/sebkl/gotojs)  package.
 
 
 ## Usage
@@ -12,14 +12,19 @@ Currently there are two types of microservices:
 
 ### gotojs
 
-```TBD```
+```
+TBD
+```
+
 
 ### appengine
 The appengine service do also contain some basic html5 web frontend which also shall act as sample applications.
 
-```TBD```
+```
+TBD
+```
 
-####Example 'app.yaml' configuration:
+#### Example 'app.yaml' configuration:
 ```yaml
 application: <application_name>
 version: dev
