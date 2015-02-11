@@ -1,0 +1,189 @@
+<!DOCTYPE HTML>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+  <head>
+    <title>ShareME</title>
+    <link href='http://fonts.googleapis.com/css?family=Michroma' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Oswald:300' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Maven+Pro' rel='stylesheet' type='text/css'>
+    <meta property="og:site_name" content="ShareME" />
+    <meta property="og:title" content="ShareME" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="http://shareme.nakedape.net/p/" />
+    <meta property="og:image" content="http://shareme.nakedape.net/p/screenshots/01.png" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:description" content="File sharing service" />
+    <script type="text/javascript" src="/gotojs/engine.js"></script>
+<style>
+	    html,body,div#container {width:100%;height:100%;margin:0px;background-color:#FFFFFF}
+	    div { font-family: 'Maven Pro';}
+	    div#headline { text-align: center; border-bottom: 2px solid #aaaaff;}
+	    div#headline a { text-decoration: none; font-family: 'Michroma'; font-size: 30pt;color: #888888;}
+	    div#headline a b { font-family: 'Michroma'; font-size: 30pt; color: #000000;}
+
+	    div#fileupload { float: center; width: 100%; margin-top: 5%; }
+	    div#fileupload input { 	font-size:20; padding: 7px; border: 2px solid #d2d2d2; margin: 0px; 
+		    			outline: none; color: #555555; resize: none; overflow: hidden;
+					background: #ffffff; vertical-align: center; text-align: left;  }
+
+	    div#fileupload input.unselected {color: #cccccc; border: 2px solid #f2f2f2;}
+	    div#fileupload div 	{ float: left; width: 100%; }
+	    div#fileupload div#form { float: left; margin-left:20%; width: 60%; }
+	    div#fileupload input#file_input { display: none; position: absolute; left: 0px; top: 0px; }
+	    div#fileupload input#file_button { width: 80% }
+	    div#fileupload input#upload_button  { position: relative; left: -6px; display: none; background-color: #ccccff; 
+		    				border-color: #ccccff; color: #ffffff; font-weight: bold; }
+
+	    div#fileupload input#upload_button:focus  { background-color: #aaaaff; border-color: #aaaaff;}
+	    div#fileupload input#upload_button:hover   { background-color: #aaaaff; border-color: #aaaaff; }
+
+	    div#fileupload input:focus 		{ border-color: #ccccff; }
+	    div#fileupload input:active 	{ border-color: #ccccff; opacity: 0.5; margin-top: 2px; margin-left: 2px; }
+
+	    div#fileupload div.preview {display: none; margin-left: 20%; width: 60%; height: 0px; overflow: visible; background-color: #ffffff;}
+	    div.preview img { position: relative; top: 10px; border: 2px solid #d2d2d2; background-color: #ffffff; border-image-width:0px; }
+
+	    div#objects { position: relative; top: 10%; margin-left: 20%; width: 60%; float: left; }
+	    div#objects .share { 
+		    float: left;
+		    padding: 10px;
+		    padding-top: 15px;
+		    margin-top:20px;
+		    border: 1px solid #d2d2d2; 
+		    /*background: #d2d2d2;*/
+		    opacity: 0.4;
+		    width: 100%;} 
+
+	    div#objects .share:hover  { opacity: 1.0; }
+
+	    div.share div.control { 
+		    font-size: 0.7em;
+		    float: right;
+		    text-align: right;
+		    position: relative;
+		    top: -8px;
+		    padding-bottom: 2px;
+		    width: 100%;
+		    overflow: visible;
+		    color: #999999;
+		    /*opacity: 0.6; */
+		    /* background-color: #ffffff;*/ }
+
+	    div.share div.key {
+		    margin-right: 20px;
+		    float: right;
+		    width: 30%;
+		    font-size: 0.6em;
+		    word-wrap: break-word;
+	    }
+
+	    div.share div.caption {
+		    float: left;
+		    color: #8080ff;
+		    font-weight: bold;
+	    }
+
+	    div.share a { color: #000000; font-weight: bold; cursor: pointer; }
+	    div.share a:visited { text-decoration: none; }
+	    div.share a:link {text-decoration: none; }
+	    div.share a:active {text-decoration: none; }
+	    div.share a:hover {text-decoration: none; color: #0000ff; }
+
+	    div#poweredby { position:absolute; right: 30px; bottom: 30px; }
+	    div#poweredby a { text-decoration: none; font-family: 'Michroma'; font-size: 10pt;color: #888888;}
+	    div#poweredby a b { font-family: 'Michroma'; font-size: 10pt; color: #000000;}
+	    div#poweredby p { font-family: 'Oswald'; font-size: 10pt; color: #8888ff; position: relative; bottom: -15px;left: -15px;}
+</style>
+  </head>
+  <body>
+	<div id="headline">
+		<a href="https://github.com/sebkl/globejs" tabIndex="-1">Share<b>ME</b></a>
+	</div>
+	<div id="fileupload">
+		<div>
+			<form id="fileupload_form" method="put" action="/gotojs/Shareme/Put">
+				<div><input type="file" name="file" id="file_input"/></div>
+				<div id="form">
+				     <input class="unselected" type="button" id="file_button" value="Select a file to share ..."/>
+				     <input id="upload_button" type="button" value="upload"/>
+			     </div>
+			     <div class="preview"></div>
+			</form>
+		</div>
+	</div>
+	<div id="objects"></div>
+	<div id="poweredby"><p>powered by:</p><a href="https://github.com/sebkl/gotojs" tabindex="-1">Goto<b>JS</b></a></div>
+  </body>
+  <script>
+
+function addStat(stat) {
+	console.log(stat);
+	var item = $('<div>').addClass('share').attr('id',stat.key);
+	var ctl = $('<div>').addClass('control').html(new Date(stat.created) + ' | ' + stat.size + ' | ' + stat.mimetype).appendTo(item)	
+	var name = (stat.name ? stat.name : 'unknown');
+	$('<div>').addClass('caption').html(name).appendTo(item);
+	$('<a>').attr("href",stat.url).attr('target',"content").html(' | open').appendTo(item);
+	$('<a>').html(' | delete').appendTo(item).click(function() {
+		GOTOJS.Shareme.Delete(stat.key, function(d) {
+			$('#' + stat.key).fadeOut(400);
+		});
+	});
+	$('<div>').addClass('key').html(stat.key).appendTo(item);
+
+	$('#objects').append(item);
+}
+
+$('#file_button').click(function() { 
+	$('#file_input')[0].click(); 
+});
+
+$('#file_input').on('change',function() {
+	var file = $('#file_input')[0].files[0];
+	var fr = new FileReader();
+	fr.onload = function(progressEvent) {
+		var oldval = $('#file_button').val();
+		$('#file_button').val(file.name).removeClass('unselected');
+
+		/* Check if selected file is an image. */
+		if (file.type.match(/^image/)) {
+			$('#fileupload div.preview').empty().fadeIn(400);
+			var img = $('<img>').css('max-width',$('#file_button').outerWidth()).appendTo('#fileupload div.preview')
+			var blob = new Blob( [ progressEvent.target.result ], { type: file.type } );
+			img[0].src = window.URL.createObjectURL(blob);
+		}
+
+		$('#upload_button').fadeIn(400,function() {
+			$('#upload_button').focus();
+			$('#upload_button').unbind('click');
+			$('#upload_button').click(function() {
+				GOTOJS.Shareme.Put(progressEvent.target.result,file.type,file.name,function(d) {
+					//var url = GOTOJS.Shareme.Get.Url() + "/" + d.key;
+					$('#upload_button').fadeOut(200,function() {
+						//revert everything to initial state.
+						$('#file_button').val(oldval).addClass('unselected').focus();
+						addStat(d);
+					});
+
+					$('#fileupload div.preview').fadeOut(200,function() {
+						$('#fileupload div.preview').empty();
+					});
+				});
+			});
+		});
+	}	
+	fr.readAsArrayBuffer(file);
+});
+
+$(document).ready(function() {
+	$('#file_button').focus();
+
+	/* load existing shares */
+	GOTOJS.Shareme.MyShares( function(d) {
+		$('#objects').empty()
+		for (var i in d) {
+			addStat(d[i]);
+		}
+	});
+});
+
+</script>
+</html>
