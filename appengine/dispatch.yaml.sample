@@ -1,0 +1,6 @@
+application: <appname>
+
+dispatch:
+  - url: "*/*"
+    module: shareme
+

@@ -5,14 +5,15 @@
 //
 // TODOS:
 //	- Check valid period by ornjob or on certain calls.
+//	- make responsive for mobiles.
 //	- configurable file type and size limits on both, server and client side.
-//	- store meta information such as name in datastore
+//	- store meta information such as name,thumbnail in datastore
 //	- support multiple files
-//	- add sento link (mailto:)
+//	- add send-to link (mailto:)
 //	- add copy button which copies link to clipboard (!)
 //	- general UI improvements
 //	- consider authentication and authorization options per share.
-//	- add thumbnail 50x50 in stats object.
+//	- add default thumbnail for non pictures/videos
 //	- implement/use url shortener (together with datastore)
 package shareme
 
@@ -20,6 +21,7 @@ import (
 	. "github.com/sebkl/gotojs"
 	"github.com/sebkl/gotojs/gae"
 	"github.com/sebkl/microservices/gotojs/imgsrv"
+	"github.com/sebkl/imgurl"
 	"log"
 	"io"
 	"appengine"
@@ -48,13 +50,14 @@ type Share struct {
 	MimeType string `json:"mimetype,omitempty"`
 	Error string `json:"error,omitempty"`
 	Url string `json:"url,omitempty"`
+	Thumbnail string `json:"thumbnail,omitempty"`
 }
 
 func (s *Share) IsError() bool {
 	return len(s.Error) > 0
 }
 
-func newShare(gae *gae.GAEContext, bi *blobstore.BlobInfo) Share {
+func (s *SharemeService) newShare(gae *gae.GAEContext, bi *blobstore.BlobInfo) Share {
 	return Share{
 		Key: string(bi.BlobKey),
 		ValidPeriod: DefaultValidPeriod - int64(time.Now().Sub(bi.CreationTime).Nanoseconds() / Msec),
@@ -62,6 +65,7 @@ func newShare(gae *gae.GAEContext, bi *blobstore.BlobInfo) Share {
 		MimeType: bi.ContentType,
 		Created: int64(bi.CreationTime.UnixNano() / Msec),
 		Url: fmt.Sprintf("%s/%s/%s/%s",gae.HTTPContext.Frontend.BaseUrl(),InterfaceName,"Get",string(bi.BlobKey)),
+		Thumbnail: s.ThumbnailURL(gae,string(bi.BlobKey)),
 	}
 }
 
@@ -109,11 +113,38 @@ func (s *SharemeService) Stat(c *gae.GAEContext, key string) Share {
 		c.HTTPContext.ReturnStatus = http.StatusNotFound
 		return noShare(err)
 	} else {
-		return newShare(c,bi)
+		return s.newShare(c,bi)
 	}
 }
 
-//MyShares returnes a list of all shares that have been uploade by the user.
+//Thumbnail returns a 50x50 thumbnail data url of a key if possible.
+func (s *SharemeService) ThumbnailURL(c *gae.GAEContext, key string) string {
+	//TODO: check cache (meta info in data store)
+	obj := s.Get(c,key)
+	if bb,ok := obj.(*BlobBinary); ok && strings.HasPrefix(bb.MimeType(),"image") {
+		if url,_,err := imgurl.UrlifyR(bb,bb.MimeType(), 50, 50); err == nil {
+			return url
+		} else {
+			log.Printf("Could urlify blob: %s",err)
+		}
+	}
+	return ""
+}
+
+//ImageURL returns the given object das a data url.
+func (s *SharemeService) ImageURL(c *gae.GAEContext, key string) string {
+	obj := s.Get(c,key)
+	if bb,ok := obj.(*BlobBinary); ok && strings.HasPrefix(bb.MimeType(),"image") {
+		if url,_,err := imgurl.UrlifyR(bb,bb.MimeType(),0,0); err == nil {
+			return url
+		} else {
+			panic(err)
+		}
+	}
+	return ""
+}
+
+//MyShares returns a list of all shares that have been upload by the user.
 func (s *SharemeService) MyShares(c *gae.GAEContext, session *Session) []Share {
 	ret := make([]Share,0,len(session.Properties))
 	for k,name := range session.Properties {
@@ -145,7 +176,7 @@ func (s *SharemeService) Delete(c *gae.GAEContext, session *Session, key string)
 	return
 }
 
-//Put creates a new share tihin the storage.
+//Put creates a new share within the storage.
 func (s *SharemeService) Put(c *gae.GAEContext, session *Session, name string, bc *BinaryContent) (blob Share) {
 	if bc == nil {
 		return noShare(errors.New("No object provided."))
@@ -208,7 +239,9 @@ func init() {
 	f := NewFrontend()
 	f.Redirect("/","/p/")
 	f.ExposeInterface(NewSharemeService(),InterfaceName)
+	f.ExposeInterface(&imgsrv.ImageService{},"Image")
 	f.EnableFileServer("htdocs","p")
+	log.Printf("%s",f.InterfaceNames())
 	gae.SetupAndStart(f)
 	//f.Bindings().Match("(Put|Delete)$").If(AutoInjectF(RestrictToAdmin))
 }

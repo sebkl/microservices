@@ -30,8 +30,3 @@ func (s *ImageService) IsNude(bc *BinaryContent) bool {
 
 	return isNude
 }
-
-
-
-
-
