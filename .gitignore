@@ -1,0 +1,6 @@
+Makefile
+appengine/Makefile
+appengine/shareme/app.yaml
+appengine/dispatch.yml
+gotojs/Makefile
+gotojs/imgsrv/Makefile
