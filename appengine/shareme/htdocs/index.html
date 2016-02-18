@@ -19,6 +19,9 @@
 <style>
 	    html,body,div#container {width:100%;height:100%;margin:0px;background-color:#FFFFFF}
 	    div { font-family: 'Maven Pro';}
+
+
+
 	    div#headline { text-align: center; border-bottom: 2px solid #aaaaff;}
 	    div#headline a { text-decoration: none; font-family: 'Michroma'; font-size: 30pt;color: #888888;}
 	    div#headline a b { font-family: 'Michroma'; font-size: 30pt; color: #000000;}
@@ -93,10 +96,17 @@
 	    div.share a:active {text-decoration: none; }
 	    div.share a:hover {text-decoration: none; color: #0000ff; }
 
+	    div#fileupload div#outer_progress_bar { position: relative; bottom: 11px; border: 0px solid #aaaaff; height: 10px; width: 80%; }
+	    div#fileupload div#progress_bar { display: none; position: relative; bottom: 0px; height: 10px; background-color: #aaaaff; width: 100%; }
+
+	    div#loading { height: 30px; width: 100%; }
+	    div#loading img { position: relative; top: 10%; left: 40%; height: 30px; width: 30px; }
+
 	    div#poweredby { position:absolute; right: 30px; bottom: 30px; }
 	    div#poweredby a { text-decoration: none; font-family: 'Michroma'; font-size: 10pt;color: #888888;}
 	    div#poweredby a b { font-family: 'Michroma'; font-size: 10pt; color: #000000;}
 	    div#poweredby p { font-family: 'Oswald'; font-size: 10pt; color: #8888ff; position: relative; bottom: -15px;left: -15px;}
+
 </style>
   </head>
   <body>
@@ -105,22 +115,31 @@
 	</div>
 	<div id="fileupload">
 		<div>
-			<form id="fileupload_form" method="put" action="/gotojs/Shareme/Put">
+			<form id="fileupload_form" method="POST" action="/gotojs/Shareme/Put" enctype="multipart/form-data">
 				<div><input type="file" name="file" id="file_input"/></div>
 				<div id="form">
 				     <input class="unselected" type="button" id="file_button" value="Select a file to share ..."/>
 				     <input id="upload_button" class="action_button" type="button" value="upload"/>
 				     <input id="url_button" class="action_button" type="button" value="url" style="display: none"/>
+				     <div id="outer_progress_bar">
+					     <div id="progress_bar"></div>
+				     </div>
 			     </div>
 			     <div class="preview"></div>
 			</form>
 		</div>
 	</div>
-	<div id="objects"></div>
+	<div id="objects">
+	</div>
+	<div id="loading">
+		<img src="loading.gif"/>
+	</div>
 	<div id="poweredby"><p>powered by:</p><a href="https://github.com/sebkl/gotojs" tabindex="-1">Goto<b>JS</b></a></div>
   </body>
   <script>
 
+
+/* add a share to the list of displayed shares. */
 function addStat(stat) {
 	var item = $('<div>').addClass('share').attr('id',stat.key);
 	var ctl = $('<div>').addClass('control').html(new Date(stat.created) + ' | ' + stat.size + ' | ' + stat.mimetype).appendTo(item)	
@@ -129,9 +148,12 @@ function addStat(stat) {
 	$('<a>').attr("href",stat.url).attr('target',"content").html(' | open').appendTo(item);
 	$('<a>').html(' | delete').appendTo(item).click(function() {
 		GOTOJS.Shareme.Delete(stat.key, function(d) {
-			$('#' + stat.key).fadeOut(400);
+			$("#" + GOTOJS.HELPER.escapeSelector(stat.key)).fadeOut(400);
 		});
 	});
+
+	var surl = location.href.replace(/\?.*$/,"") + "?key=" + stat.key
+	$('<a>').attr("href",surl).html(' | share').appendTo(item)
 
 	if (stat.mimetype.match(/^image/)) { /* IMAGE */
 		$('<a>').html(' | dataurl').on('click', function() {
@@ -150,71 +172,107 @@ function addStat(stat) {
 	$('#objects').append(item);
 }
 
+function setBar(v) {
+	if (v > 0) {
+		$('#progress_bar').show()
+	}
+	$('#progress_bar').css('width',(v*100) + "%")
+	if (v >= 1.0) {
+		$('#progress_bar').fadeOut(500);
+	}
+}
+
 $('#file_button').click(function() { 
 	$('#file_input')[0].click(); 
 });
 
 $('#file_input').on('change',function() {
 	var file = $('#file_input')[0].files[0];
-	var fr = new FileReader();
-	fr.onload = function(progressEvent) {
-		$('#fileupload div.preview').empty();
-		$('#url_button').css("display","none");
 
-		var oldval = $('#file_button').val();
-		$('#file_button').val(file.name).removeClass('unselected');
+	$('#fileupload div.preview').empty();
+	$('#url_button').css("display","none");
+	var oldval = $('#file_button').val();
+	$('#file_button').val(file.name).removeClass('unselected');
+	$('#upload_button').fadeIn(400,function() {
+		$('#upload_button').focus();
+		$('#upload_button').unbind('click');
+		$('#upload_button').click(function() {
+			GOTOJS.Shareme.UploadURL(function(url) {
+				GOTOJS.HELPER.Proxy.Post(url,new FormData($('form')[0]),function(d) {
+						$('#url_button').fadeOut(200);
+						$('#upload_button').fadeOut(200,function() {
+							//revert everything to initial state.
+							$('#file_button').val(oldval).addClass('unselected').focus();
+							for (var i in d) {
+								addStat(d[i]);
+							}
+						});
 
-		/* Check if selected file is an image. */
-		if (file.type.match(/^image/)) {
-			$('#fileupload div.preview').empty().fadeIn(400);
-			var img = $('<img>').css('max-width',$('#file_button').outerWidth()).appendTo('#fileupload div.preview')
-			var blob = new Blob( [ progressEvent.target.result ], { type: file.type } );
-			img[0].src = window.URL.createObjectURL(blob);
-
-			$('#url_button').fadeIn(400,function() {
-				$('#url_button').unbind('click');
-				$('#url_button').click(function() {
-					GOTOJS.Image.Urlify(progressEvent.target.result,file.type,0,0,function(d) {
-						window.open(d,'content');
-					});
-				});
-			});
-		}
-
-		$('#upload_button').fadeIn(400,function() {
-			$('#upload_button').focus();
-			$('#upload_button').unbind('click');
-			$('#upload_button').click(function() {
-				GOTOJS.Shareme.Put(progressEvent.target.result,file.type,file.name,function(d) {
-					//var url = GOTOJS.Shareme.Get.Url() + "/" + d.key;
-					$('#url_button').fadeOut(200);
-					$('#upload_button').fadeOut(200,function() {
-						//revert everything to initial state.
-						$('#file_button').val(oldval).addClass('unselected').focus();
-						addStat(d);
-					});
-
-
-					$('#fileupload div.preview').fadeOut(200,function() {
-						$('#fileupload div.preview').empty();
-					});
+						$('#fileupload div.preview').fadeOut(200,function() {
+							$('#fileupload div.preview').empty();
+						});
 				});
 			});
 		});
-	}	
-	fr.readAsArrayBuffer(file);
+	});
+
+	/* previewable and DataURLABLE */
+	//TODO: make limit for size
+	if (file.type.match(/^image/)) {
+		var fr = new FileReader();
+		fr.onloadstart = function(r) { }
+		fr.onprogress = function(e) { setBar(e.loaded/e.total) }
+		fr.onload = function(progressEvent) {
+			/* Check if selected file is an image. */
+			try {
+				/* create data url button */
+				$('#url_button').fadeIn(400,function() {
+					$('#url_button').unbind('click');
+					$('#url_button').click(function() {
+						GOTOJS.Image.Urlify(progressEvent.target.result,file.type,0,0,function(d) {
+							window.open(d,'content');
+						});
+					});
+				});
+
+				/* Create preview */
+				$('#fileupload div.preview').empty().fadeIn(400);
+				var img = $('<img>').css('max-width',$('#file_button').outerWidth()).appendTo('#fileupload div.preview')
+				var blob = new Blob( [ progressEvent.target.result ], { type: file.type } );
+				img[0].src = window.URL.createObjectURL(blob);
+			} catch (e) {
+				console.log(e);
+			}
+
+		};
+		fr.readAsArrayBuffer(file);
+	}
 });
 
 $(document).ready(function() {
 	$('#file_button').focus();
 
-	/* load existing shares */
-	GOTOJS.Shareme.MyShares( function(d) {
-		$('#objects').empty()
-		for (var i in d) {
-			addStat(d[i]);
-		}
-	});
+	GOTOJS.HTTP.Status.oninprogress = function() { $('#loading').show(); }
+	GOTOJS.HTTP.Status.oncompleted = function() { $('#loading').fadeOut(200); }
+	GOTOJS.HTTP.Status.onprogress = function(r) { setBar(r); }
+
+	/* check if a key was handovered. */
+	var key = GOTOJS.HELPER.queryParameter('key');
+	if (key) {
+		GOTOJS.Shareme.Stat(key, function(d) { 
+			addStat(d); 
+		});
+	}  else {
+		/* load all existing shares. */
+		GOTOJS.Shareme.MyShares( function(d) {
+			$('#loading').fadeOut(300, function() {
+				$('#objects').empty();
+				for (var i in d) {
+					addStat(d[i]);
+				}
+			});
+		});
+	}
 });
 
 </script>
